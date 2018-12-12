@@ -1,74 +1,84 @@
-/**
- * Live CSS Editor Based on http://barberboy.github.com/css-terminal/
- */
+const newElement = (tagname, properties) => {
+  el = document.createElement(tagname);
+  Object.keys( properties ).forEach( name => el[name] = properties[name] );
+  return el;
+}
+
 let terminal = document.getElementById('css-terminal');
 if (terminal) {
   terminal.focus();
 } else {
-
-	const cookieValue = (requested = 'css-terminal', defaultValue = '/** Add CSS rules here */\n') => {
-	  document.cookie.split(';').forEach( cookie => {
-	    c = cookie.split('=');
-	    if (c[0].replace(/^\s+/, "") === requested) {
-	    	return unescape(c[1]);
-	    };
-		});
-		return defaultValue
-	};
-	
-	const newElement = (tagname, properties) => {
-	  el = document.createElement(tagname);
-	  Object.keys( properties ).forEach( name => el[name] = properties[name] );
-	  return el;
-	}
-	
-	const key = {enter: 13, escape: 27, semicolon: 59}
-	
 	const head = document.getElementsByTagName('head')[0];
 	const body = document.getElementsByTagName('body')[0];
 	
-	previousStyles = cookieValue();
+	requiredStyles = newElement("style", {});
+	requiredStyles.innerHTML = 
+		`.css-editor {position: fixed; z-index: 10000; width: 400px; height: 300px; border-radius: 4px; overflow: auto;}
+		 .css-editor textarea { font-family: monospace;border: 0;background-color: rgba(0, 0, 0, .75);border: 2px solid rgba(0, 0, 0, .1);color: white;padding: 0;overflow: auto; width: 100%; height: 100%; font-size: 16px; }
+		 .css-editor input[type="button"] { margin-top: -28px; width: 25%; background: #eeeeee; border-radius: 0; border: none; line-height: 28px;-webkit-appearance: none; font-size: 16px;}`;
+	head.appendChild(requiredStyles);
 	
-	terminal = newElement( 'textarea', {
+	const cssEditor = newElement( 'div', {
+		className: 'css-editor',
+		style: 'display: block !important; left: 16px;top: 16px;'
+	});
+	const left = newElement( 'input', { type: "button", value: "LEFT" });
+	left.onclick = () => {
+		cssEditor.style.left = '20px';
+		cssEditor.style.right = 'initial';
+	}
+	const up = newElement( 'input', { type: "button", value: "UP" });
+	up.onclick = () => {
+		cssEditor.style.top = '20px';
+		cssEditor.style.bottom = 'initial';
+	}
+	const down = newElement( 'input', { type: "button", value: "DOWN" });
+	down.onclick = () => {
+		cssEditor.style.top = 'initial';
+		cssEditor.style.bottom = '80px';
+	}
+	const right = newElement( 'input', { type: "button", value: "RIGHT" });
+	right.onclick = () => {
+		cssEditor.style.left = 'initial';
+		cssEditor.style.right = '20px';
+	}
+	const terminal = newElement( 'textarea', {
 	  id : 'css-terminal',
-	  value : previousStyles,
+	  value : '/** Add CSS rules here */\n',
 	  autocorrect : 'off',
 	  autocapitalize : 'off',
-	  style: "font-family: monospace;position: fixed;z-index: 10000;border: 0;background-color: rgba(0, 0, 0, .75);border: 2px solid rgba(0, 0, 0, .1);color: white;padding: 0;width: 500px;height: 300px;overflow: auto;"
+	  style: "display: block !important;"
 	});
-	body.appendChild(terminal);
+	cssEditor.appendChild(terminal);
+	cssEditor.appendChild(left);
+	cssEditor.appendChild(up);
+	cssEditor.appendChild(down);
+	cssEditor.appendChild(right);
+	body.appendChild(cssEditor);
 	
 	const output = newElement('style', {
 	  id : 'css-terminal-output',
-	  innerHTML : previousStyles
+	  innerHTML : ''
 	});
 	body.appendChild(output);
 	
 	const interceptKey = ( key, replaceWith, ev ) => {
-		console.log( ev.key );
 		if ( ev.key === key ) {
 	  	ev.preventDefault();
-	  	var start = this.selectionStart;
-	    var end = this.selectionEnd;
-	    console.log( start, end );
-			console.log(
-				"---",
-				terminal.value.substring(0, start),
-				replaceWith,
-				terminal.value.substring(end),
-				"---"
-			);
+	  	var start = terminal.selectionStart;
+	    var end = terminal.selectionEnd;
 	    terminal.value =
 	    						terminal.value.substring(0, start)
 	                + replaceWith
 	                + terminal.value.substring(end);
-	    this.selectionStart = "";
-	    this.selectionEnd = start + replaceWith.length;
+	    terminal.selectionStart = start + replaceWith.length;
+	    terminal.selectionEnd = terminal.selectionStart;
 	  }
 	}
 	
 	terminal.addEventListener('keydown', function( ev ){
 		interceptKey("Tab", "  ", ev);
+		// Bypass the curly quotes
 		interceptKey("\"", "\"", ev);
 	})
 	
